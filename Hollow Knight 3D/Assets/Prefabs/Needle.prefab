@@ -143,5 +143,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tip: {fileID: 6753226577234563787}
-  speed: 35
-  waitTime: 0.5
+  speed: 80
+  waitTime: 0.8
+  maxDistance: 35
