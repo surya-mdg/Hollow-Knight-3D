@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 7330645915713532731}
   - component: {fileID: 9081901074505143082}
   - component: {fileID: 6182295432389818809}
+  - component: {fileID: -6805238814413637542}
   m_Layer: 0
   m_Name: Needle
   m_TagString: Needle
@@ -113,6 +114,24 @@ MonoBehaviour:
   retrieveSpeed: 60
   waitTime: 0.5
   maxDistance: 35
+--- !u!114 &-6805238814413637542
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6182295432389818434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlineMode: 0
+  outlineColor: {r: 0, g: 0, b: 0, a: 1}
+  outlineWidth: 2.5
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1001 &7055447793508645677
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -180,6 +199,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hornet_Needle
       objectReference: {fileID: 0}
+    - target: {fileID: 5074512353664290214, guid: c59ed01e20e0876438393f484d5a0ed7,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 9a6e9c5406049574dab0ebdc667c8bb7, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c59ed01e20e0876438393f484d5a0ed7, type: 3}
 --- !u!4 &7377816611758546118 stripped

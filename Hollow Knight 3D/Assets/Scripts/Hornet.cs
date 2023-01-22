@@ -131,7 +131,7 @@ public class Hornet : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Tilde))
             manualControl = !manualControl;
 
-        if (Input.GetKeyUp(KeyCode.A))
+        if (Input.GetKeyUp(KeyCode.P))
         {
             attackID = 0;
             spinStage = 0;
