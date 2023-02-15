@@ -112,7 +112,7 @@ MonoBehaviour:
   tip: {fileID: 6753226577234563787}
   throwSpeed: 80
   retrieveSpeed: 60
-  waitTime: 0.5
+  waitTime: 0.75
   maxDistance: 35
 --- !u!114 &-6805238814413637542
 MonoBehaviour:

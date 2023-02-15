@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.VFX;
 
 public class Hornet : MonoBehaviour
 {
@@ -8,8 +9,12 @@ public class Hornet : MonoBehaviour
     [Header("Refrences")]
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Animator anim;
+    [SerializeField] private Animator animNormals; //Animator for another model used to fix transparent meshes
+    [SerializeField] private GameObject normalsMesh; //Model used to fix mesh transparency issue
     [SerializeField] private GameObject needle;
     [SerializeField] private GameObject holdingNeedle;
+    [SerializeField] private GameObject dashParticle;
+    [SerializeField] private VisualEffect dustParticle;
     [SerializeField] private Transform target;
     [SerializeField] private Transform needleSpawn;
     [SerializeField] private Transform center;
@@ -43,10 +48,13 @@ public class Hornet : MonoBehaviour
     [SerializeField] private float maxDistance = 30f;
     [SerializeField] private float dashWaitTime = 0.5f;
     [SerializeField] private float dashRotationSpeed = 8f;
+    [SerializeField] private LayerMask groundLayers;
 
     [Header("Misc")]
     [SerializeField] private bool showColliders = false;
     [SerializeField] private bool manualControl = false;
+    [SerializeField] private bool testAttack = false;
+    [SerializeField] private int testAttackNumber = 1;
     #endregion
 
     #region PrivateVariables
@@ -55,9 +63,11 @@ public class Hornet : MonoBehaviour
     private int[] attackCount = new int[6];
     private readonly int[] attackWeights = new int[] {0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 5};
     private LayerMask playerLayer;
+    private GameObject particles;
 
     private float bufferTime = 0f;
     private float attackBufferTime = 0f;
+    private bool once = false;
 
     //Throw Needle
     private bool waitForNeedle = false;
@@ -77,6 +87,7 @@ public class Hornet : MonoBehaviour
 
     private void Awake()
     {
+        normalsMesh.SetActive(true);
         System.Array.Fill(attackCount, 0);
         playerLayer = LayerMask.NameToLayer("Player");
         attackBufferTime = attackWaitTime;
@@ -96,6 +107,12 @@ public class Hornet : MonoBehaviour
                 if (prevMove != nextMove)
                     System.Array.Fill(attackCount, 0);
 
+                if(testAttack)
+                {
+                    System.Array.Fill(attackCount, 0);
+                    nextMove = testAttackNumber;
+                }
+                
                 NextMove(nextMove);
                 prevMove = nextMove;
                 attackCount[nextMove]++;
@@ -171,6 +188,8 @@ public class Hornet : MonoBehaviour
             case 1:
                 anim.SetTrigger("ThrowNeedleTrigger");
                 anim.SetBool("ThrowNeedle", true);
+                animNormals.SetTrigger("ThrowNeedleTrigger");
+                animNormals.SetBool("ThrowNeedle", true);
                 bufferTime = throwNeedleWaitTime;
                 attackID = 2;
                 break;
@@ -181,6 +200,8 @@ public class Hornet : MonoBehaviour
             case 3:
                 anim.SetTrigger("DashAttackTrigger");
                 anim.SetBool("Dashing", true);
+                animNormals.SetTrigger("DashAttackTrigger");
+                animNormals.SetBool("Dashing", true);
                 initialPos = transform.position;
                 bufferTime = dashWaitTime;
                 isDashing = true;
@@ -193,6 +214,9 @@ public class Hornet : MonoBehaviour
                 anim.SetTrigger("JumpAttackTrigger");
                 anim.SetBool("InAir", true);
                 anim.SetBool("JumpAttack", true);
+                animNormals.SetTrigger("JumpAttackTrigger");
+                animNormals.SetBool("InAir", true);
+                animNormals.SetBool("JumpAttack", true);
                 StartCoroutine(nameof(FakeJump));
                 attackID = 6;
                 break;
@@ -210,17 +234,27 @@ public class Hornet : MonoBehaviour
         }
         else if (isDashing)
         {
+            if(!once)
+            {
+                particles = Instantiate(dashParticle, needleSpawn.position, Quaternion.LookRotation(-transform.forward,transform.up));
+                once = true;
+            }
+
             transform.Translate(dashSpeed * Time.deltaTime * Vector3.forward);
 
-            if (Vector3.Distance(initialPos, transform.position) > maxDistance)
+            if (Vector3.Distance(initialPos, transform.position) > maxDistance || Physics.CheckSphere(needleSpawn.position, 0.3f, groundLayers))
                 isDashing = false;
         }
         else
         {
             anim.SetBool("Dashing", false);
+            animNormals.SetBool("Dashing", false);
 
             attackID = 0;
             isDashing = false;
+            once = false;
+
+            Destroy(particles);
         }
     }
 
@@ -240,6 +274,9 @@ public class Hornet : MonoBehaviour
             anim.SetTrigger("JumpAttackTrigger");
             anim.SetBool("JumpAttack", true);
             anim.SetBool("SpinAttack", true);
+            animNormals.SetTrigger("JumpAttackTrigger");
+            animNormals.SetBool("JumpAttack", true);
+            animNormals.SetBool("SpinAttack", true);
 
             Rotate(true);
             Vector3 jumpDir = transform.up + (transform.forward / 4);
@@ -252,6 +289,7 @@ public class Hornet : MonoBehaviour
             if (transform.position.y >= maxHeight)
             {
                 anim.SetBool("JumpAttackShoot", true);
+                animNormals.SetBool("JumpAttackShoot", true);
 
                 rb.constraints = RigidbodyConstraints.FreezePosition;
                 bufferTime = jumpFloatTime;
@@ -262,11 +300,18 @@ public class Hornet : MonoBehaviour
         else if (bufferTime < 0f)
         {
             anim.SetBool("JumpAttackShoot", false);
+            animNormals.SetBool("JumpAttackShoot", false);
 
             Rotate(true);
             rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
             Vector3 dir = target.position - transform.position;
-            rb.AddForce(shootForce * dir.normalized, ForceMode.Impulse);
+
+            if(!once)
+            {
+                particles = Instantiate(dashParticle, center.position, Quaternion.LookRotation(-dir));
+                rb.AddForce(shootForce * dir.normalized, ForceMode.Impulse);
+                once = true;
+            }
         }
         else
         {
@@ -281,6 +326,9 @@ public class Hornet : MonoBehaviour
             anim.SetTrigger("JumpAttackTrigger");
             anim.SetBool("SpinAttack", true);
             anim.SetBool("JumpAttack", true);
+            animNormals.SetTrigger("JumpAttackTrigger");
+            animNormals.SetBool("SpinAttack", true);
+            animNormals.SetBool("JumpAttack", true);
 
             Rotate(true);
             Vector3 jumpDir = transform.up + (transform.forward / 4);
@@ -297,6 +345,7 @@ public class Hornet : MonoBehaviour
             else if(transform.position.y <= spinMaxHeight && spinLock)
             {
                 anim.SetBool("SpinAttackHold", true);
+                animNormals.SetBool("SpinAttackHold", true);
 
                 rb.constraints = RigidbodyConstraints.FreezePosition;
                 holdingNeedle.SetActive(false);
@@ -319,6 +368,9 @@ public class Hornet : MonoBehaviour
             anim.SetBool("SpinAttack", false);
             anim.SetBool("SpinAttackHold", false);
             anim.SetBool("JumpAttack", false);
+            animNormals.SetBool("SpinAttack", false);
+            animNormals.SetBool("SpinAttackHold", false);
+            animNormals.SetBool("JumpAttack", false);
 
             rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
             holdingNeedle.SetActive(true);
@@ -349,6 +401,7 @@ public class Hornet : MonoBehaviour
         }
 
         anim.SetBool("Walking", true);
+        animNormals.SetBool("Walking", true);
         Rotate(true, walkSpeed, true);
         Vector3 dir = (retrievePostions[nextWalk].position - transform.position).normalized;
 
@@ -357,6 +410,7 @@ public class Hornet : MonoBehaviour
         if (Vector3.Distance(transform.position, retrievePostions[nextWalk].position) < 1f)
         {
             anim.SetBool("Walking", false);
+            animNormals.SetBool("Walking", false);
             prevWalk = nextWalk;
             attackID = 0;
         }
@@ -394,6 +448,7 @@ public class Hornet : MonoBehaviour
         if (!other.gameObject.CompareTag("Untagged") && other.gameObject.CompareTag("Needle"))
         {
             anim.SetBool("ThrowNeedle", false);
+            animNormals.SetBool("ThrowNeedle", false);
 
             waitForNeedle = false;
             holdingNeedle.SetActive(true);
@@ -409,7 +464,12 @@ public class Hornet : MonoBehaviour
         {
             anim.SetBool("JumpAttack", false);
             anim.SetBool("SpinAttack", false);
+            animNormals.SetBool("JumpAttack", false);
+            animNormals.SetBool("SpinAttack", false);
+            dustParticle.Play();
+            Destroy(particles);
             rb.velocity = new Vector3(0, 0, 0);
+            once = false;
             attackID = 0;
         }
         else if(attackID == 6 || attackID == 3)
@@ -418,6 +478,8 @@ public class Hornet : MonoBehaviour
             {
                 anim.SetBool("InAir", false);
                 anim.SetBool("JumpAttack", false);
+                animNormals.SetBool("InAir", false);
+                animNormals.SetBool("JumpAttack", false);
                 attackID = 0;
             }    
         }
@@ -431,6 +493,8 @@ public class Hornet : MonoBehaviour
         {
             anim.SetTrigger("ThrowNeedleTrigger");
             anim.SetBool("ThrowNeedle", true);
+            animNormals.SetTrigger("ThrowNeedleTrigger");
+            animNormals.SetBool("ThrowNeedle", true);
             attackID = 1;
             bufferTime = throwNeedleWaitTime;
         }
@@ -451,6 +515,8 @@ public class Hornet : MonoBehaviour
         {
             anim.SetTrigger("DashAttackTrigger");
             anim.SetBool("Dashing", true);
+            animNormals.SetTrigger("DashAttackTrigger");
+            animNormals.SetBool("Dashing", true);
             initialPos = transform.position;
             bufferTime = dashWaitTime;
             isDashing = true;
@@ -468,6 +534,9 @@ public class Hornet : MonoBehaviour
             anim.SetTrigger("JumpAttackTrigger");
             anim.SetBool("InAir", true);
             anim.SetBool("JumpAttack", true);
+            animNormals.SetTrigger("JumpAttackTrigger");
+            animNormals.SetBool("InAir", true);
+            animNormals.SetBool("JumpAttack", true);
             StartCoroutine(nameof(FakeJump));
         }
     }

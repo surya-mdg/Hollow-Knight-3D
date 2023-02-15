@@ -38,7 +38,7 @@ public class CameraController : MonoBehaviour
         rotationX -= mouseY * mouseSensitivityX * sensitivityMultiplier;
         rotationY += mouseX * mouseSensitivityY * sensitivityMultiplier;
 
-        rotationX = Mathf.Clamp(rotationX, -90f, 90f);
+        rotationX = Mathf.Clamp(rotationX, -90f, 85f);
     }
 
     private void Rotate()
