@@ -14,6 +14,7 @@ public class Hornet : MonoBehaviour
     [SerializeField] private GameObject needle;
     [SerializeField] private GameObject holdingNeedle;
     [SerializeField] private GameObject dashParticle;
+    [SerializeField] private GameObject[] slashParticles;
     [SerializeField] private VisualEffect dustParticle;
     [SerializeField] private Transform target;
     [SerializeField] private Transform needleSpawn;
@@ -42,6 +43,7 @@ public class Hornet : MonoBehaviour
     [SerializeField] private float spinMaxHeight = 5f;
     [SerializeField] private float spinRadius = 4f;
     [SerializeField] private float spinTime = 1f;
+    [SerializeField] private float spinChangeRate = 0.25f;
 
     [Header("Dash Attack Settings")]
     [SerializeField] private float dashSpeed = 30f;
@@ -66,6 +68,7 @@ public class Hornet : MonoBehaviour
     private GameObject particles;
 
     private float bufferTime = 0f;
+    private float spinBufferTime = 0f;
     private float attackBufferTime = 0f;
     private bool once = false;
 
@@ -349,6 +352,8 @@ public class Hornet : MonoBehaviour
 
                 rb.constraints = RigidbodyConstraints.FreezePosition;
                 holdingNeedle.SetActive(false);
+                foreach (GameObject g in slashParticles)
+                    g.SetActive(true);
                 bufferTime = spinTime;
 
                 spinLock = false;
@@ -358,7 +363,20 @@ public class Hornet : MonoBehaviour
         else if (bufferTime > 0f)
         {
             bufferTime -= Time.deltaTime;
+            spinBufferTime -= Time.deltaTime;
 
+            if (spinBufferTime < 0f)
+            {
+                foreach (GameObject g in slashParticles)
+                {
+                    Transform tran = g.transform;
+                    int rand = Random.Range(0, 360);
+                    tran.localRotation = Quaternion.Euler(tran.localRotation.eulerAngles.x, rand, tran.localRotation.eulerAngles.z);
+                }
+
+                spinBufferTime = spinChangeRate;
+            }
+            
             Collider[] colliders = Physics.OverlapSphere(transform.position, spinRadius, playerLayer);
             if (colliders.Length > 0)
                 Debug.Log("Hit");
@@ -371,6 +389,9 @@ public class Hornet : MonoBehaviour
             animNormals.SetBool("SpinAttack", false);
             animNormals.SetBool("SpinAttackHold", false);
             animNormals.SetBool("JumpAttack", false);
+
+            foreach (GameObject g in slashParticles)
+                g.SetActive(false);
 
             rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
             holdingNeedle.SetActive(true);

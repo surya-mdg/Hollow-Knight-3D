@@ -5,6 +5,8 @@ using UnityEngine;
 public class Needle : MonoBehaviour
 {
     [SerializeField] private Transform tip;
+    [SerializeField] private Transform end;
+    [SerializeField] private LineRenderer rope;
     [SerializeField] private float throwSpeed = 80f;
     [SerializeField] private float retrieveSpeed = 60f;
     [SerializeField] private float waitTime = 0.5f;
@@ -15,9 +17,11 @@ public class Needle : MonoBehaviour
     private Vector3 initialPos;
 
     private void Awake()
-    {
+    {  
         buffer = waitTime;
         initialPos = transform.position;
+        rope.positionCount = 2;
+        rope.SetPosition(0, end.position - (end.forward * 2.5f));
     }
 
     void Update()
@@ -29,11 +33,12 @@ public class Needle : MonoBehaviour
     {
         if(!retrieve)
         {
-            transform.Translate(Vector3.forward * throwSpeed * Time.deltaTime);
+            transform.Translate(throwSpeed * Time.deltaTime * Vector3.forward);
             Collider[] colliders = Physics.OverlapSphere(tip.position, 0.5f);
+            rope.SetPosition(1, end.position);
             foreach (Collider i in colliders)
             {
-                if (i.tag != null && i.tag == "Ground")
+                if (i.CompareTag("Ground"))
                 {
                     retrieve = true;
                 }
@@ -45,9 +50,10 @@ public class Needle : MonoBehaviour
         else
         {
             if(buffer<0f)
-                transform.Translate(-Vector3.forward * retrieveSpeed * Time.deltaTime);
+                transform.Translate(retrieveSpeed * Time.deltaTime * -Vector3.forward);
 
             buffer -= Time.deltaTime;
+            rope.SetPosition(1, end.position);
 
             if (Vector3.Distance(initialPos, transform.position) > (maxDistance + 10f))
                 Destroy(this.gameObject);

@@ -77,7 +77,7 @@ public class PlayerMovement : MonoBehaviour
             slashVFX.Play();
             
             bodyModel.localPosition = bodyModelOffset.localPosition;
-            attackBuffer = 2f;
+            attackBuffer = 0.75f;
         }
 
         attackBuffer -= Time.deltaTime;

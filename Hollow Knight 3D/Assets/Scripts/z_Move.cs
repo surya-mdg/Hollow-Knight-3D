@@ -6,15 +6,17 @@ public class z_Move : MonoBehaviour
 {
     public Transform pos;
     public float speed = 10f;
+    public Transform slash;
 
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKey(KeyCode.O))
+        if(Input.GetKeyDown(KeyCode.O))
         {
-            Vector3 dir = (pos.position - transform.position).normalized;
-
-            transform.Translate(speed * Time.deltaTime * dir);
+            int rand = Random.Range(0, 360);
+            transform.localRotation = Quaternion.Euler(transform.localRotation.eulerAngles.x, rand, transform.localRotation.eulerAngles.z);
+            rand = Random.Range(0, 360);
+            slash.localRotation = Quaternion.Euler(slash.localRotation.eulerAngles.x, rand, slash.localRotation.eulerAngles.z);
         }
     }
 }
