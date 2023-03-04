@@ -43,7 +43,7 @@ public class PlayerMovement : MonoBehaviour
     private float jumpBuffer = 0f;
     private float attackBuffer = 0f;
     private readonly float movementMultiplier = 10f;
-    private bool isGrounded = false;
+    
     private bool isJumping = false;
     private bool onSlope = false;
 
@@ -53,9 +53,13 @@ public class PlayerMovement : MonoBehaviour
     private RaycastHit slopeHit;
     #endregion
 
+    [HideInInspector] public bool reviving = false;
+    [HideInInspector] public bool isGrounded = false;
+
     private void Awake()
     {
         initialBodyPos = bodyModel.localPosition;
+        jumpBuffer = jumpTime;
     }
 
     void Update()
@@ -68,7 +72,7 @@ public class PlayerMovement : MonoBehaviour
 
         isGrounded = Physics.CheckSphere(groundDetectPoint.position, groundDetectRadius, groundLayers); //Detects ground
 
-        if(Input.GetKeyDown(KeyCode.Mouse0))
+        if(Input.GetKeyDown(KeyCode.Mouse0) && !reviving)
         {
             handModel.SetActive(true);
             bodyDouble.SetActive(true);
@@ -185,6 +189,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void PlayerInput() //All input code go here
     {
+        if(reviving)
+        {
+            horizontalAxis = 0;
+            verticalAxis = 0;
+            return;
+        }
+
         horizontalAxis = Input.GetAxisRaw("Horizontal");
         verticalAxis = Input.GetAxisRaw("Vertical");
 

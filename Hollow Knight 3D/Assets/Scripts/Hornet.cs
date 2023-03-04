@@ -44,6 +44,7 @@ public class Hornet : MonoBehaviour
     [SerializeField] private float spinRadius = 4f;
     [SerializeField] private float spinTime = 1f;
     [SerializeField] private float spinChangeRate = 0.25f;
+    [SerializeField] private LayerMask playerLayer;
 
     [Header("Dash Attack Settings")]
     [SerializeField] private float dashSpeed = 30f;
@@ -51,6 +52,9 @@ public class Hornet : MonoBehaviour
     [SerializeField] private float dashWaitTime = 0.5f;
     [SerializeField] private float dashRotationSpeed = 8f;
     [SerializeField] private LayerMask groundLayers;
+
+    [Header("Rest Settings")]
+    [SerializeField] private float restTime = 4f;
 
     [Header("Misc")]
     [SerializeField] private bool showColliders = false;
@@ -62,9 +66,8 @@ public class Hornet : MonoBehaviour
     #region PrivateVariables
     private float attackID = 0;
     private int prevMove = 6;
-    private int[] attackCount = new int[6];
+    private int[] attackCount = new int[7];
     private readonly int[] attackWeights = new int[] {0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 5};
-    private LayerMask playerLayer;
     private GameObject particles;
 
     private float bufferTime = 0f;
@@ -86,13 +89,16 @@ public class Hornet : MonoBehaviour
     //Walking
     private int prevWalk = 1;
     private int nextWalk = 0;
+    //Rest Time
+    private float restTimeBuffer = 0;
+    private int restCount = 0;
+    [HideInInspector] public bool rest = false;
     #endregion
 
     private void Awake()
     {
         normalsMesh.SetActive(true);
         System.Array.Fill(attackCount, 0);
-        playerLayer = LayerMask.NameToLayer("Player");
         attackBufferTime = attackWaitTime;
     }
 
@@ -115,6 +121,9 @@ public class Hornet : MonoBehaviour
                     System.Array.Fill(attackCount, 0);
                     nextMove = testAttackNumber;
                 }
+
+                if (rest)
+                    nextMove = 6;
                 
                 NextMove(nextMove);
                 prevMove = nextMove;
@@ -142,6 +151,9 @@ public class Hornet : MonoBehaviour
             case 5:
                 Walk();
                 break;
+            case 7:
+                Rest();
+                break;
             default:
                 break;
         }
@@ -151,13 +163,20 @@ public class Hornet : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Tilde))
             manualControl = !manualControl;
 
-        if (Input.GetKeyUp(KeyCode.P))
+        if (Input.GetKeyUp(KeyCode.P) && Input.GetKey(KeyCode.L))
         {
             attackID = 0;
             spinStage = 0;
             jumpStage = 0;
             waitForNeedle = false;
+            isDashing = true;
             bufferTime = throwNeedleWaitTime;
+
+            foreach (GameObject g in slashParticles)
+                g.SetActive(false);
+
+            rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
+            holdingNeedle.SetActive(true);
 
             anim.SetBool("InAir", false);
             anim.SetBool("JumpAttack", false);
@@ -167,6 +186,15 @@ public class Hornet : MonoBehaviour
             anim.SetBool("SpinAttack", false);
             anim.SetBool("JumpAttackShoot", false);
             anim.SetBool("SpinAttackHold", false);
+
+            animNormals.SetBool("InAir", false);
+            animNormals.SetBool("JumpAttack", false);
+            animNormals.SetBool("Dashing", false);
+            animNormals.SetBool("ThrowNeedle", false);
+            animNormals.SetBool("Walking", false);
+            animNormals.SetBool("SpinAttack", false);
+            animNormals.SetBool("JumpAttackShoot", false);
+            animNormals.SetBool("SpinAttackHold", false);
         }    
 
         if (Input.GetKey(KeyCode.Tab))
@@ -222,6 +250,12 @@ public class Hornet : MonoBehaviour
                 animNormals.SetBool("JumpAttack", true);
                 StartCoroutine(nameof(FakeJump));
                 attackID = 6;
+                break;
+            case 6:
+                restCount++;
+                restTimeBuffer = restTime;
+                rest = false;
+                attackID = 7;
                 break;
             default:
                 break;
@@ -322,6 +356,21 @@ public class Hornet : MonoBehaviour
         }
     }
 
+    private void Rest()
+    {
+        restTimeBuffer -= Time.deltaTime;
+        anim.SetBool("Resting", true);
+
+        if (restTimeBuffer < 0f)
+        {
+            if (restCount == 3)
+                Debug.Log("Defeat");
+
+            anim.SetBool("Resting", false);
+            attackID = 0;
+        }
+    }
+
     private void SpinNeedle()
     {
         if (spinStage == 0)
@@ -379,7 +428,11 @@ public class Hornet : MonoBehaviour
             
             Collider[] colliders = Physics.OverlapSphere(transform.position, spinRadius, playerLayer);
             if (colliders.Length > 0)
+            {
+                if(colliders[0].gameObject != null && colliders[0].CompareTag("Player"))
+                    colliders[0].gameObject.GetComponent<PlayerStats>().DecreaseHealth();
                 Debug.Log("Hit");
+            }
         }
         else
         {
@@ -487,7 +540,7 @@ public class Hornet : MonoBehaviour
             anim.SetBool("SpinAttack", false);
             animNormals.SetBool("JumpAttack", false);
             animNormals.SetBool("SpinAttack", false);
-            dustParticle.Play();
+            //dustParticle.Play();
             Destroy(particles);
             rb.velocity = new Vector3(0, 0, 0);
             once = false;
