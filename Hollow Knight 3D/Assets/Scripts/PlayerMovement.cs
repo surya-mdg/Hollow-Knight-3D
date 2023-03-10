@@ -35,6 +35,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Miscellaneous Settings")]
     [SerializeField] private float walkBendAngle = -4f;
+    [SerializeField] private float attackCooldown = 0.5f; //Must be same as variable of same name in PlayerCombat.cs
     #endregion
 
     #region Private Variables
@@ -42,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
     private float verticalAxis; //Vertical Input
     private float jumpBuffer = 0f;
     private float attackBuffer = 0f;
+    private float attackCooldownBuffer = 0f;
     private readonly float movementMultiplier = 10f;
     
     private bool isJumping = false;
@@ -72,8 +74,9 @@ public class PlayerMovement : MonoBehaviour
 
         isGrounded = Physics.CheckSphere(groundDetectPoint.position, groundDetectRadius, groundLayers); //Detects ground
 
-        if(Input.GetKeyDown(KeyCode.Mouse0) && !reviving)
+        if(Input.GetKeyDown(KeyCode.Mouse0) && !reviving && attackCooldownBuffer < 0)
         {
+            attackCooldownBuffer = attackCooldown;
             handModel.SetActive(true);
             bodyDouble.SetActive(true);
             playerHand.Play("Base Layer.Slash", 0, 0);
@@ -85,6 +88,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         attackBuffer -= Time.deltaTime;
+        attackCooldownBuffer -= Time.deltaTime;
 
         if (attackBuffer < 0)
         {
@@ -92,7 +96,6 @@ public class PlayerMovement : MonoBehaviour
             bodyDouble.SetActive(false);
             bodyModel.localPosition = initialBodyPos;
         }
-            
     }
 
     private void FixedUpdate()

@@ -20,6 +20,9 @@ public class Hornet : MonoBehaviour
     [SerializeField] private Transform needleSpawn;
     [SerializeField] private Transform center;
     [SerializeField] private Transform respawnPoint;
+    [SerializeField] private Transform exitPoint;
+    [SerializeField] private LineRenderer lr;
+    [SerializeField] private GameManager gm;
 
     [Header("General Settings")]
     [SerializeField] private float attackWaitTime = 1.5f;
@@ -55,6 +58,7 @@ public class Hornet : MonoBehaviour
 
     [Header("Rest Settings")]
     [SerializeField] private float restTime = 4f;
+    [SerializeField] private int maxRestCount = 3;
 
     [Header("Misc")]
     [SerializeField] private bool showColliders = false;
@@ -74,10 +78,12 @@ public class Hornet : MonoBehaviour
     private float spinBufferTime = 0f;
     private float attackBufferTime = 0f;
     private bool once = false;
+    [HideInInspector] public bool start = false;
 
     //Throw Needle
     private bool waitForNeedle = false;
     private GameObject thrownNeedle;
+    private float needleTimer = 0f;
     //Jump Attack
     private int jumpStage = 0;
     //Spin Needle Attack
@@ -92,6 +98,9 @@ public class Hornet : MonoBehaviour
     //Rest Time
     private float restTimeBuffer = 0;
     private int restCount = 0;
+    private bool restOnce = true;
+    private int restStage = 5;
+    private Vector3 ropePos = new Vector3(0, 0, 0);
     [HideInInspector] public bool rest = false;
     #endregion
 
@@ -104,10 +113,16 @@ public class Hornet : MonoBehaviour
 
     void Update()
     {
+        if(rest && restOnce)
+        {
+            RestReset();
+            restOnce = false;
+        }
+
         if (attackID == 0 && !manualControl)
             attackBufferTime -= Time.deltaTime;
 
-        if (attackBufferTime < 0f)
+        if (start && attackBufferTime < 0f)
         {
             int nextMove = attackWeights[Random.Range(0, attackWeights.Length)];
 
@@ -158,6 +173,12 @@ public class Hornet : MonoBehaviour
                 break;
         }
 
+        if(transform.position.y < -5f)
+        {
+            RestReset();
+            transform.SetPositionAndRotation(respawnPoint.position, respawnPoint.rotation);
+        }
+
         //Development Inputs
 
         if (Input.GetKeyDown(KeyCode.Tilde))
@@ -196,6 +217,67 @@ public class Hornet : MonoBehaviour
             animNormals.SetBool("JumpAttackShoot", false);
             animNormals.SetBool("SpinAttackHold", false);
         }    
+
+        if(Input.GetKey(KeyCode.P)  && Input.GetKeyDown(KeyCode.Tilde))
+        {
+            if(attackID==1)
+            {
+                anim.SetBool("JumpAttack", false);
+                anim.SetBool("SpinAttack", false);
+                anim.SetBool("JumpAttackShoot", false);
+                animNormals.SetBool("JumpAttack", false);
+                animNormals.SetBool("SpinAttack", false);
+                animNormals.SetBool("JumpAttackShoot", false);
+                
+                rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
+                if (particles != null)
+                    Destroy(particles);
+                rb.velocity = new Vector3(0, 0, 0);
+                once = false;
+                attackID = 0;
+            }
+            else if( attackID == 2)
+            {
+                anim.SetBool("ThrowNeedle", false);
+                animNormals.SetBool("ThrowNeedle", false);
+
+                if(particles != null)
+                    Destroy(particles);
+                waitForNeedle = false;
+                holdingNeedle.SetActive(true);
+                bufferTime = throwNeedleWaitTime;
+                if (thrownNeedle != null)
+                    Destroy(thrownNeedle);
+                attackID = 0;
+            }
+            else if(attackID == 3)
+            {
+                spinStage = 2;
+                bufferTime = -1f;
+            }
+            else if (isDashing)
+            {
+                bufferTime = 0f;
+                isDashing = false;
+            }
+            else if(attackID == 5)
+            {
+                anim.SetBool("Walking", false);
+                animNormals.SetBool("Walking", false);
+                prevWalk = nextWalk;
+                attackID = 0;
+            }
+            else if(attackID == 6)
+            {
+                anim.SetBool("InAir", false);
+                anim.SetBool("JumpAttack", false);
+                animNormals.SetBool("InAir", false);
+                animNormals.SetBool("JumpAttack", false);
+                attackID = 0;
+            }
+
+            attackBufferTime = 0f;
+        }
 
         if (Input.GetKey(KeyCode.Tab))
         {
@@ -255,6 +337,7 @@ public class Hornet : MonoBehaviour
                 restCount++;
                 restTimeBuffer = restTime;
                 rest = false;
+                restOnce = true;
                 attackID = 7;
                 break;
             default:
@@ -291,7 +374,8 @@ public class Hornet : MonoBehaviour
             isDashing = false;
             once = false;
 
-            Destroy(particles);
+            if (particles != null)
+                Destroy(particles);
         }
     }
 
@@ -358,16 +442,60 @@ public class Hornet : MonoBehaviour
 
     private void Rest()
     {
-        restTimeBuffer -= Time.deltaTime;
-        anim.SetBool("Resting", true);
-
-        if (restTimeBuffer < 0f)
+        if(restStage > 3)
         {
-            if (restCount == 3)
-                Debug.Log("Defeat");
+            restTimeBuffer -= Time.deltaTime;
+            anim.SetBool("Resting", true);
+            animNormals.SetBool("Resting", true);
 
-            anim.SetBool("Resting", false);
-            attackID = 0;
+            if (restTimeBuffer < 0f)
+            {
+                if (restCount == maxRestCount)
+                {
+                    anim.SetBool("Resting", false);
+                    animNormals.SetBool("Resting", false);
+                    restStage = 0;
+                }
+                else
+                {
+                    anim.SetBool("Resting", false);
+                    animNormals.SetBool("Resting", false);
+                    attackID = 0;
+                }
+            }
+        }
+        else if(restStage == 0)
+        {
+            anim.SetTrigger("JumpAttackTrigger");
+            anim.SetBool("InAir", true);
+            anim.SetBool("JumpAttack", true);
+            animNormals.SetTrigger("JumpAttackTrigger");
+            animNormals.SetBool("InAir", true);
+            animNormals.SetBool("JumpAttack", true);
+            lr.positionCount = 2;
+            lr.SetPosition(0, holdingNeedle.transform.position);
+            restTimeBuffer = 0.2f;
+            holdingNeedle.SetActive(false);
+            rb.useGravity = false;
+            restStage++;
+        }
+        else if(restStage == 1 && restTimeBuffer > 0f)
+        {
+            restTimeBuffer -= Time.deltaTime;
+            ropePos = Vector3.Lerp(holdingNeedle.transform.position, exitPoint.position, 1f);
+            lr.SetPosition(1, ropePos);
+        }
+        else if(restStage == 1)
+        {
+            Vector3 dir = (exitPoint.position - transform.position).normalized;
+            transform.Translate(2 * walkSpeed * Time.deltaTime * dir, Space.World);
+            lr.SetPosition(0, holdingNeedle.transform.position);
+
+            if (Vector3.Distance(transform.position, exitPoint.position) < 1f)
+            {
+                gm.running = false;
+                Destroy(this.gameObject);
+            }
         }
     }
 
@@ -456,13 +584,32 @@ public class Hornet : MonoBehaviour
         if(bufferTime > 0f)
         {
             Rotate(false,rotationSpeed);
+            needleTimer = 0f;
             bufferTime -= Time.deltaTime;
         }
         else if(!waitForNeedle)
         {
             thrownNeedle = Instantiate(needle, needleSpawn.position, needleSpawn.rotation);
+            particles = Instantiate(dashParticle, needleSpawn.position, Quaternion.LookRotation(-transform.forward));
             holdingNeedle.SetActive(false);
             waitForNeedle = true;
+        }
+        else
+        {
+            needleTimer += Time.deltaTime;
+            if (needleTimer > 4f)
+            {
+                anim.SetBool("ThrowNeedle", false);
+                animNormals.SetBool("ThrowNeedle", false);
+
+                Destroy(particles);
+                waitForNeedle = false;
+                holdingNeedle.SetActive(true);
+                bufferTime = throwNeedleWaitTime;
+                if(thrownNeedle != null)
+                    Destroy(thrownNeedle);
+                attackID = 0;
+            }
         }
     }
 
@@ -488,6 +635,67 @@ public class Hornet : MonoBehaviour
             prevWalk = nextWalk;
             attackID = 0;
         }
+    }
+
+    private void RestReset()
+    {
+        if (attackID == 1)
+        {
+            anim.SetBool("JumpAttack", false);
+            anim.SetBool("SpinAttack", false);
+            anim.SetBool("JumpAttackShoot", false);
+            animNormals.SetBool("JumpAttack", false);
+            animNormals.SetBool("SpinAttack", false);
+            animNormals.SetBool("JumpAttackShoot", false);
+
+            rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
+            if (particles != null)
+                Destroy(particles);
+            rb.velocity = new Vector3(0, 0, 0);
+            once = false;
+            attackID = 0;
+        }
+        else if (attackID == 2)
+        {
+            anim.SetBool("ThrowNeedle", false);
+            animNormals.SetBool("ThrowNeedle", false);
+
+            if (particles != null)
+                Destroy(particles);
+            waitForNeedle = false;
+            holdingNeedle.SetActive(true);
+            bufferTime = throwNeedleWaitTime;
+            if (thrownNeedle != null)
+                Destroy(thrownNeedle);
+            attackID = 0;
+        }
+        else if (attackID == 3)
+        {
+            spinStage = 2;
+            bufferTime = -1f;
+        }
+        else if (isDashing)
+        {
+            bufferTime = 0f;
+            isDashing = false;
+        }
+        else if (attackID == 5)
+        {
+            anim.SetBool("Walking", false);
+            animNormals.SetBool("Walking", false);
+            prevWalk = nextWalk;
+            attackID = 0;
+        }
+        else if (attackID == 6)
+        {
+            anim.SetBool("InAir", false);
+            anim.SetBool("JumpAttack", false);
+            animNormals.SetBool("InAir", false);
+            animNormals.SetBool("JumpAttack", false);
+            attackID = 0;
+        }
+
+        attackBufferTime = 0f;
     }
 
     private void Rotate(bool instant,float speed = 10f,bool walk = false)
@@ -524,6 +732,7 @@ public class Hornet : MonoBehaviour
             anim.SetBool("ThrowNeedle", false);
             animNormals.SetBool("ThrowNeedle", false);
 
+            Destroy(particles);
             waitForNeedle = false;
             holdingNeedle.SetActive(true);
             bufferTime = throwNeedleWaitTime;
