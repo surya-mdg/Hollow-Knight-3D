@@ -1,12 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class CameraController : MonoBehaviour
 {
     [Header("References")]
+    [SerializeField] private GameManager gm;
     [SerializeField] private Transform cam;
     [SerializeField] private Transform orientation;
+
+    [Header("UI")]
+    [SerializeField] private TextMeshProUGUI sensitivityText;
 
     [Header("Camera Settings")]
     [SerializeField] private float mouseSensitivityX = 1f;
@@ -22,6 +27,8 @@ public class CameraController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        sensitivityText.text = string.Format("{0:0.00}", mouseSensitivityX / 100);
     }
 
     void Update()
@@ -32,6 +39,9 @@ public class CameraController : MonoBehaviour
 
     private void CameraInput()
     {
+        if (gm.paused)
+            return;
+
         mouseX = Input.GetAxis("Mouse X");
         mouseY = Input.GetAxis("Mouse Y");
 
@@ -45,5 +55,23 @@ public class CameraController : MonoBehaviour
     {
         cam.localRotation = Quaternion.Euler(rotationX, rotationY, 0);
         orientation.localRotation = Quaternion.Euler(0, rotationY, 0);
+    }
+
+    public void ControlSensitivity(bool increase)
+    {
+        if(increase && mouseSensitivityX < 100)
+        {
+            mouseSensitivityX++;
+            mouseSensitivityY++;
+
+            sensitivityText.text = string.Format("{0:0.00}", mouseSensitivityX / 100);
+        }
+        else if (mouseSensitivityX > 1)
+        {
+            mouseSensitivityX--;
+            mouseSensitivityY--;
+
+            sensitivityText.text = string.Format("{0:0.00}", mouseSensitivityX / 100);
+        }
     }
 }

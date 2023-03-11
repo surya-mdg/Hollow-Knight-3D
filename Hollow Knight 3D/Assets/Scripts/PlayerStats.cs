@@ -9,6 +9,7 @@ using UnityEngine.Rendering.Universal;
 public class PlayerStats : MonoBehaviour
 {
     [Header("References")]
+    [SerializeField] GameManager gm;
     [SerializeField] TextMeshProUGUI playerHealth;
     [SerializeField] ParticleSystem focusParticles;
     [SerializeField] ParticleSystem focusParticlesBurst;
@@ -61,7 +62,7 @@ public class PlayerStats : MonoBehaviour
     {
         buffer -= Time.deltaTime;
 
-        if (Input.GetKey(KeyCode.Q) && pm.isGrounded && soulPoints >= 3)
+        if (Input.GetKey(KeyCode.Q) && pm.isGrounded && soulPoints >= 3 && health < maxHealth)
         {
             if(reviveStartTimeBuffer < 0f)
             {
@@ -124,6 +125,8 @@ public class PlayerStats : MonoBehaviour
             ui.UpdateHealthUI(maxHealth - health, true);
             health--;
             playerHealth.text = "" + health;
+            if (health <= 0)
+                gm.GameOver();
             buffer = damageCooldown;
         }
     }

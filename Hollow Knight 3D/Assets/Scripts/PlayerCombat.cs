@@ -7,6 +7,7 @@ public class PlayerCombat : MonoBehaviour
     [Header("References")]
     [SerializeField] private Camera cam;
     [SerializeField] private GameObject spellPrefab;
+    [SerializeField] private GameManager gm;
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Transform shootPoint;
     [SerializeField] private PlayerStats stats;
@@ -29,10 +30,10 @@ public class PlayerCombat : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Mouse1) && castBuffer < 0 && !stats.reviving)
+        if (Input.GetKeyDown(KeyCode.Mouse1) && castBuffer < 0 && !stats.reviving && !gm.paused)
             Cast();
 
-        if (Input.GetKeyDown(KeyCode.Mouse0) && attackBuffer < 0 && !stats.reviving)
+        if (Input.GetKeyDown(KeyCode.Mouse0) && attackBuffer < 0 && !stats.reviving && !gm.paused)
             Attack();
 
         if (cam.transform.localRotation.eulerAngles.x < minDownAttackAngle)

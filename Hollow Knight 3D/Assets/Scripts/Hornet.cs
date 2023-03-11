@@ -101,6 +101,7 @@ public class Hornet : MonoBehaviour
     private bool restOnce = true;
     private int restStage = 5;
     private Vector3 ropePos = new Vector3(0, 0, 0);
+    private PlayerStats stats;
     [HideInInspector] public bool rest = false;
     #endregion
 
@@ -109,6 +110,7 @@ public class Hornet : MonoBehaviour
         normalsMesh.SetActive(true);
         System.Array.Fill(attackCount, 0);
         attackBufferTime = attackWaitTime;
+        stats = target.gameObject.GetComponent<PlayerStats>();
     }
 
     void Update()
@@ -283,8 +285,6 @@ public class Hornet : MonoBehaviour
         {
             transform.SetPositionAndRotation(respawnPoint.position, respawnPoint.rotation);
         }
-
-        SlowTime();
 
         if (manualControl)
             ControlMoves();
@@ -477,6 +477,12 @@ public class Hornet : MonoBehaviour
             restTimeBuffer = 0.2f;
             holdingNeedle.SetActive(false);
             rb.useGravity = false;
+
+            Vector3 lookPos = exitPoint.position - transform.position;
+            lookPos.y = 0;
+            Quaternion lookRot = Quaternion.LookRotation(lookPos);
+            transform.localRotation = lookRot;
+
             restStage++;
         }
         else if(restStage == 1 && restTimeBuffer > 0f)
@@ -541,6 +547,7 @@ public class Hornet : MonoBehaviour
         {
             bufferTime -= Time.deltaTime;
             spinBufferTime -= Time.deltaTime;
+            rb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
 
             if (spinBufferTime < 0f)
             {
@@ -554,13 +561,17 @@ public class Hornet : MonoBehaviour
                 spinBufferTime = spinChangeRate;
             }
             
-            Collider[] colliders = Physics.OverlapSphere(transform.position, spinRadius, playerLayer);
-            if (colliders.Length > 0)
+            if(Vector3.Distance(target.position,transform.position) <= spinRadius)
+            {
+                stats.DecreaseHealth();
+            }
+            //Collider[] colliders = Physics.OverlapSphere(transform.position, spinRadius, playerLayer);
+            /*if (colliders.Length > 0)
             {
                 if(colliders[0].gameObject != null && colliders[0].CompareTag("Player"))
                     colliders[0].gameObject.GetComponent<PlayerStats>().DecreaseHealth();
                 Debug.Log("Hit");
-            }
+            }*/
         }
         else
         {
@@ -824,17 +835,9 @@ public class Hornet : MonoBehaviour
         }
     }
 
-    private void SlowTime()
-    {
-        if(Input.GetKey(KeyCode.Backspace))
-            Time.timeScale = 0.25f;
-        else
-            Time.timeScale = 1f;
-    }
-
     private void OnDrawGizmos()
     {
         if(showColliders)
-            Gizmos.DrawSphere(center.position, radius);
+            Gizmos.DrawSphere(transform.position, spinRadius);
     }
 }

@@ -5,23 +5,41 @@ using TMPro;
 
 public class HornetStats : MonoBehaviour
 {
+    [SerializeField] GameObject hitCount;
     [SerializeField] TextMeshProUGUI playerHealth;
     [SerializeField] private int maxHits = 3;
 
     private int currHits = 0;
+    private bool showCount = false;
 
     private Hornet hornet;
 
     private void Awake()
     {
         hornet = GetComponent<Hornet>();
-        playerHealth.text = "" + currHits;
+
+        if(playerHealth != null)
+            playerHealth.text = "" + currHits;
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.O))
             DecreaseHealth();
+
+        if (Input.GetKeyDown(KeyCode.Keypad6))
+        {
+            if (!showCount)
+            {
+                hitCount.SetActive(true);
+                showCount = true;
+            }
+            else
+            {
+                hitCount.SetActive(false);
+                showCount = false;
+            }
+        }
     }
 
     public void DecreaseHealth()
@@ -34,6 +52,7 @@ public class HornetStats : MonoBehaviour
             currHits = 0;
         }
 
-        playerHealth.text = "" + currHits;
+        if (playerHealth != null)
+            playerHealth.text = "" + currHits;
     }
 }

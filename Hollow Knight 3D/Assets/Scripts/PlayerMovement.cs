@@ -17,6 +17,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform bodyModelOffset;
     [SerializeField] private GameObject bodyDouble;
     [SerializeField] private GameObject handModel;
+    [SerializeField] private GameManager gm;
     [SerializeField] private Animator playerBody;
     [SerializeField] private Animator playerHand;
 
@@ -74,7 +75,7 @@ public class PlayerMovement : MonoBehaviour
 
         isGrounded = Physics.CheckSphere(groundDetectPoint.position, groundDetectRadius, groundLayers); //Detects ground
 
-        if(Input.GetKeyDown(KeyCode.Mouse0) && !reviving && attackCooldownBuffer < 0)
+        if(Input.GetKeyDown(KeyCode.Mouse0) && !reviving && attackCooldownBuffer < 0 && !gm.paused)
         {
             attackCooldownBuffer = attackCooldown;
             handModel.SetActive(true);
