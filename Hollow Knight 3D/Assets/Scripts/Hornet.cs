@@ -24,6 +24,23 @@ public class Hornet : MonoBehaviour
     [SerializeField] private LineRenderer lr;
     [SerializeField] private GameManager gm;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource dash;
+    [SerializeField] private AudioSource dashSkid; //Also used in Jump Attack
+    [SerializeField] private AudioSource throwNeedleEgalis;
+    [SerializeField] private AudioSource throwNeedleSwish;
+    [SerializeField] private AudioSource jumpSound; //Used in Jump Attack, Spin Needle, Fake Jump & Rest
+    [SerializeField] private AudioSource jumpAttackShaw;
+    [SerializeField] private AudioSource spinNeedleAdiros;
+    [SerializeField] private AudioSource spinNeedleRope;
+    [SerializeField] private AudioSource walk;
+    [SerializeField] private AudioSource restHit;
+    [SerializeField] private AudioSource restNeedleHit;
+    [SerializeField] private AudioSource restFinalHit;
+    [SerializeField] private AudioSource restFinalBlast;
+    [SerializeField] private AudioSource exitSound;
+    [SerializeField] private AudioSource startSound;
+
     [Header("General Settings")]
     [SerializeField] private float attackWaitTime = 1.5f;
     [SerializeField] private float walkSpeed = 30f;
@@ -33,7 +50,6 @@ public class Hornet : MonoBehaviour
     [Header("Throw Needle Settings")]
     [SerializeField] private float rotationSpeed = 2f;
     [SerializeField] private float throwNeedleWaitTime = 1f;
-    [SerializeField] private float radius = 2f;
 
     [Header("Jump Attack Settings")]
     [SerializeField] private float jumpForce = 10f;
@@ -78,6 +94,7 @@ public class Hornet : MonoBehaviour
     private float spinBufferTime = 0f;
     private float attackBufferTime = 0f;
     private bool once = false;
+    private bool exitSoundOnce = true;
     [HideInInspector] public bool start = false;
 
     //Throw Needle
@@ -100,6 +117,7 @@ public class Hornet : MonoBehaviour
     private int restCount = 0;
     private bool restOnce = true;
     private int restStage = 5;
+    private bool startOnce = true;
     private Vector3 ropePos = new Vector3(0, 0, 0);
     private PlayerStats stats;
     [HideInInspector] public bool rest = false;
@@ -109,7 +127,8 @@ public class Hornet : MonoBehaviour
     {
         normalsMesh.SetActive(true);
         System.Array.Fill(attackCount, 0);
-        attackBufferTime = attackWaitTime;
+        attackBufferTime = attackWaitTime + 0.75f;
+        
         stats = target.gameObject.GetComponent<PlayerStats>();
     }
 
@@ -121,8 +140,16 @@ public class Hornet : MonoBehaviour
             restOnce = false;
         }
 
-        if (attackID == 0 && !manualControl)
+        if (start && attackID == 0 && !manualControl)
+        {
+            if(startOnce)
+            {
+                startSound.Play();
+                startOnce = false;
+            }
+
             attackBufferTime -= Time.deltaTime;
+        }
 
         if (start && attackBufferTime < 0f)
         {
@@ -299,6 +326,7 @@ public class Hornet : MonoBehaviour
                 attackID = 1;
                 break;
             case 1:
+                throwNeedleEgalis.Play();
                 anim.SetTrigger("ThrowNeedleTrigger");
                 anim.SetBool("ThrowNeedle", true);
                 animNormals.SetTrigger("ThrowNeedleTrigger");
@@ -311,6 +339,7 @@ public class Hornet : MonoBehaviour
                 attackID = 3;
                 break;
             case 3:
+                dash.Play();
                 anim.SetTrigger("DashAttackTrigger");
                 anim.SetBool("Dashing", true);
                 animNormals.SetTrigger("DashAttackTrigger");
@@ -321,6 +350,7 @@ public class Hornet : MonoBehaviour
                 attackID = 4;
                 break;
             case 4:
+                walk.Play();
                 attackID = 5;
                 break;
             case 5:
@@ -335,6 +365,16 @@ public class Hornet : MonoBehaviour
                 break;
             case 6:
                 restCount++;
+                if(restCount < maxRestCount)
+                {
+                    restHit.Play();
+                    restNeedleHit.Play();
+                }
+                else
+                {
+                    gm.StopMusic();
+                    restFinalBlast.Play();
+                }
                 restTimeBuffer = restTime;
                 rest = false;
                 restOnce = true;
@@ -356,6 +396,7 @@ public class Hornet : MonoBehaviour
         {
             if(!once)
             {
+                dashSkid.Play();
                 particles = Instantiate(dashParticle, needleSpawn.position, Quaternion.LookRotation(-transform.forward,transform.up));
                 once = true;
             }
@@ -384,6 +425,7 @@ public class Hornet : MonoBehaviour
         yield return new WaitForSeconds(0.2f);
 
         Rotate(true);
+        jumpSound.Play();
         Vector3 jumpDir = transform.up + (transform.forward / 8);
         rb.AddForce(fakeJumpForce * jumpDir, ForceMode.Impulse);
     }
@@ -400,6 +442,7 @@ public class Hornet : MonoBehaviour
             animNormals.SetBool("SpinAttack", true);
 
             Rotate(true);
+            jumpSound.Play();
             Vector3 jumpDir = transform.up + (transform.forward / 4);
             rb.AddForce(jumpForce * jumpDir, ForceMode.Impulse);
 
@@ -412,6 +455,7 @@ public class Hornet : MonoBehaviour
                 anim.SetBool("JumpAttackShoot", true);
                 animNormals.SetBool("JumpAttackShoot", true);
 
+                jumpAttackShaw.Play();
                 rb.constraints = RigidbodyConstraints.FreezePosition;
                 bufferTime = jumpFloatTime;
 
@@ -429,6 +473,7 @@ public class Hornet : MonoBehaviour
 
             if(!once)
             {
+                dashSkid.Play();
                 particles = Instantiate(dashParticle, center.position, Quaternion.LookRotation(-dir));
                 rb.AddForce(shootForce * dir.normalized, ForceMode.Impulse);
                 once = true;
@@ -490,6 +535,13 @@ public class Hornet : MonoBehaviour
             restTimeBuffer -= Time.deltaTime;
             ropePos = Vector3.Lerp(holdingNeedle.transform.position, exitPoint.position, 1f);
             lr.SetPosition(1, ropePos);
+
+            if (exitSoundOnce)
+            {
+                exitSound.Play();
+                jumpSound.Play();
+                exitSoundOnce = false;
+            }
         }
         else if(restStage == 1)
         {
@@ -517,6 +569,7 @@ public class Hornet : MonoBehaviour
             animNormals.SetBool("JumpAttack", true);
 
             Rotate(true);
+            jumpSound.Play();
             Vector3 jumpDir = transform.up + (transform.forward / 4);
             rb.AddForce(spinJumpForce * jumpDir, ForceMode.Impulse);
 
@@ -530,6 +583,8 @@ public class Hornet : MonoBehaviour
             }
             else if(transform.position.y <= spinMaxHeight && spinLock)
             {
+                spinNeedleAdiros.Play();
+                spinNeedleRope.Play();
                 anim.SetBool("SpinAttackHold", true);
                 animNormals.SetBool("SpinAttackHold", true);
 
@@ -575,6 +630,7 @@ public class Hornet : MonoBehaviour
         }
         else
         {
+            spinNeedleRope.Stop();
             anim.SetBool("SpinAttack", false);
             anim.SetBool("SpinAttackHold", false);
             anim.SetBool("JumpAttack", false);
@@ -600,6 +656,7 @@ public class Hornet : MonoBehaviour
         }
         else if(!waitForNeedle)
         {
+            throwNeedleSwish.Play();
             thrownNeedle = Instantiate(needle, needleSpawn.position, needleSpawn.rotation);
             particles = Instantiate(dashParticle, needleSpawn.position, Quaternion.LookRotation(-transform.forward));
             holdingNeedle.SetActive(false);
@@ -641,6 +698,7 @@ public class Hornet : MonoBehaviour
 
         if (Vector3.Distance(transform.position, retrievePostions[nextWalk].position) < 1f)
         {
+            walk.Stop();
             anim.SetBool("Walking", false);
             animNormals.SetBool("Walking", false);
             prevWalk = nextWalk;

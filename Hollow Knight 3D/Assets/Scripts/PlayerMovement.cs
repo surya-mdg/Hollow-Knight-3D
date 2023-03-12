@@ -20,6 +20,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private GameManager gm;
     [SerializeField] private Animator playerBody;
     [SerializeField] private Animator playerHand;
+    [SerializeField] private AudioSource playerWalk;
 
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 15f; //Walk speed of player on ground
@@ -49,6 +50,7 @@ public class PlayerMovement : MonoBehaviour
     
     private bool isJumping = false;
     private bool onSlope = false;
+    private bool walkSoundOnce = true;
 
     private Vector3 moveDirection;
     private Vector3 slopeMoveDirection;
@@ -96,6 +98,20 @@ public class PlayerMovement : MonoBehaviour
             handModel.SetActive(false);
             bodyDouble.SetActive(false);
             bodyModel.localPosition = initialBodyPos;
+        }
+
+        if((Input.GetButton("Horizontal") || Input.GetButton("Vertical")) && isGrounded)
+        {
+            if(walkSoundOnce)
+            {
+                playerWalk.Play();
+                walkSoundOnce = false;
+            }
+        }
+        else
+        {
+            playerWalk.Stop();
+            walkSoundOnce = true;
         }
     }
 

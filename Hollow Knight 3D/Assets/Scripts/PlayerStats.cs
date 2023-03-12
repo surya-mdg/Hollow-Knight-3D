@@ -15,7 +15,13 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] ParticleSystem focusParticlesBurst;
     [SerializeField] UIManager ui;
     [SerializeField] Image indicator;
+    [SerializeField] GameObject oneHealthMask;
     [SerializeField] Volume volume;
+
+    [Header("Audio")]
+    [SerializeField] AudioSource getHit;
+    [SerializeField] AudioSource focusCharge;
+    [SerializeField] AudioSource focusHeal;
 
     [Header("UI Settings")]
     [SerializeField] float lowHealthIntensity = 0.5f;
@@ -71,6 +77,7 @@ public class PlayerStats : MonoBehaviour
                 reviving = true;
                 if(once)
                 {
+                    focusCharge.Play();
                     focusParticles.Play();
                     once = false;
                 }
@@ -78,6 +85,7 @@ public class PlayerStats : MonoBehaviour
 
             if (reviveBuffer < 0f)
             {
+                focusHeal.Play();
                 health++;
                 IncreaseSoul(false);
                 ui.UpdateHealthUI(maxHealth - health, false);
@@ -93,6 +101,7 @@ public class PlayerStats : MonoBehaviour
 
         if (soulPoints < 3 || Input.GetKeyUp(KeyCode.Q))
         {
+            focusCharge.Stop();
             focusParticles.Stop();
             pm.reviving = false;
             reviving = false;
@@ -122,11 +131,16 @@ public class PlayerStats : MonoBehaviour
     {
         if(buffer < 0f)
         {
+            getHit.Play();
+
             ui.UpdateHealthUI(maxHealth - health, true);
             health--;
             playerHealth.text = "" + health;
             if (health <= 0)
+            {
+                oneHealthMask.SetActive(false);
                 gm.GameOver();
+            }
             buffer = damageCooldown;
         }
     }
@@ -135,10 +149,12 @@ public class PlayerStats : MonoBehaviour
     {
         if (state)
         {
+            oneHealthMask.SetActive(true);
             vignette.intensity.value = Mathf.Lerp(vignette.intensity.value, lowHealthIntensity, vignetteChangeRate);
         }
         else
         {
+            oneHealthMask.SetActive(false);
             vignette.intensity.value = Mathf.Lerp(vignette.intensity.value, normalVignette, vignetteChangeRate);
         }
     }

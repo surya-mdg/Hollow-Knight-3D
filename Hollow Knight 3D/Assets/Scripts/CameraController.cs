@@ -59,6 +59,8 @@ public class CameraController : MonoBehaviour
 
     public void ControlSensitivity(bool increase)
     {
+        gm.uiClick.Play();
+
         if(increase && mouseSensitivityX < 100)
         {
             mouseSensitivityX++;
