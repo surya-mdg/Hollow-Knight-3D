@@ -90,7 +90,7 @@ public class PlayerCombat : MonoBehaviour
 
             HornetStats hs = hit.collider.gameObject.GetComponent<HornetStats>();
             if(hs != null)
-                hs.DecreaseHealth();
+                hs.DecreaseHealth(false);
         }
         else if(hitGround)
         {

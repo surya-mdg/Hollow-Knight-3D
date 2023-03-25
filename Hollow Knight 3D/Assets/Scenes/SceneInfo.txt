@@ -1,0 +1,3 @@
+The scene named "Greenpath" is the finalised one.
+The scene named "Greenpath_v1" is the one made for pillars with no textures. It does not contain AudioSources for Dodge_0 & Dodge_1 and also the line renderer is not updated.
+The scene named "Greenpath_Hard" is the one with parameters changed to make the game harder and is an updated version of "Greenpath"

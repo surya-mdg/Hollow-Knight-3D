@@ -19,6 +19,8 @@ public class z_SoundTest : MonoBehaviour
     [SerializeField] private AudioSource restFinalBlast;
     [SerializeField] private AudioSource exitSound;
     [SerializeField] private AudioSource startSound;
+    [SerializeField] private AudioSource dodgeSound0;
+    [SerializeField] private AudioSource dodgeSound1;
 
     public float loopTime = 1f;
 
@@ -79,6 +81,12 @@ public class z_SoundTest : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Keypad2))
             startSound.Play();
+
+        if (Input.GetKeyDown(KeyCode.Keypad5))
+            dodgeSound0.Play();
+
+        if (Input.GetKeyDown(KeyCode.Keypad8))
+            dodgeSound1.Play();
 
         if (buffer < 0)
         {

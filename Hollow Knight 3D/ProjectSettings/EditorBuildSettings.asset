@@ -6,12 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Scenes/Greenpath.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: 
+    guid: 00000000000000000000000000000000
   - enabled: 0
-    path: Assets/Scenes/Greenpath_v2.unity
+    path: Assets/Scenes/Greenpath.unity
     guid: 182815bb2bcd80546acdfe8d09dd6465
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Greenpath_v1.unity
     guid: 4621deb104a2ace4b9a3c6e1b7683b4b
+  - enabled: 1
+    path: Assets/Scenes/Greenpath_Hard.unity
+    guid: 6ed8e299d22be53498c133085bcc4ef4
   m_configObjects: {}

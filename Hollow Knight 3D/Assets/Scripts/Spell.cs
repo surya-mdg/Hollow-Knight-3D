@@ -30,7 +30,7 @@ public class Spell : MonoBehaviour
         {
             once = false;
             HornetStats hs = other.gameObject.GetComponent<HornetStats>();
-            hs.DecreaseHealth();
+            hs.DecreaseHealth(true);
         }
     }
 }

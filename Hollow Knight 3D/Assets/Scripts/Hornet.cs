@@ -23,6 +23,7 @@ public class Hornet : MonoBehaviour
     [SerializeField] private Transform exitPoint;
     [SerializeField] private LineRenderer lr;
     [SerializeField] private GameManager gm;
+    [SerializeField] private Transform groundCheck;
 
     [Header("Audio")]
     [SerializeField] private AudioSource dash;
@@ -40,6 +41,8 @@ public class Hornet : MonoBehaviour
     [SerializeField] private AudioSource restFinalBlast;
     [SerializeField] private AudioSource exitSound;
     [SerializeField] private AudioSource startSound;
+    [SerializeField] private AudioSource dodgeSound0;
+    [SerializeField] private AudioSource dodgeSound1;
 
     [Header("General Settings")]
     [SerializeField] private float attackWaitTime = 1.5f;
@@ -112,6 +115,10 @@ public class Hornet : MonoBehaviour
     //Walking
     private int prevWalk = 1;
     private int nextWalk = 0;
+    //Dodge
+    private bool dodging = false;
+    private float dodgeBuffer = 0f;
+    private float dodgeLimitBuffer = 0f;
     //Rest Time
     private float restTimeBuffer = 0;
     private int restCount = 0;
@@ -151,7 +158,10 @@ public class Hornet : MonoBehaviour
             attackBufferTime -= Time.deltaTime;
         }
 
-        if (start && attackBufferTime < 0f)
+        if(attackID == 0 && !dodging && Physics.Raycast(groundCheck.position, -Vector3.up, 0.1f, groundLayers))
+            rb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
+
+        if (start && attackBufferTime < 0f && !dodging)
         {
             int nextMove = attackWeights[Random.Range(0, attackWeights.Length)];
 
@@ -206,6 +216,32 @@ public class Hornet : MonoBehaviour
         {
             RestReset();
             transform.SetPositionAndRotation(respawnPoint.position, respawnPoint.rotation);
+        }
+
+        if (dodgeBuffer >= 0)
+            dodgeBuffer -= Time.deltaTime;
+
+        if(dodging)
+        {
+            dodgeLimitBuffer += Time.deltaTime;
+            if(dodgeLimitBuffer > 1f)
+            {
+                anim.SetBool("InAir", false);
+                anim.SetBool("JumpAttack", false);
+                animNormals.SetBool("InAir", false);
+                animNormals.SetBool("JumpAttack", false);
+                rb.velocity = new(0, 0, 0);
+                attackBufferTime = 0.5f;
+                dodgeLimitBuffer = 0;
+                dodging = false;
+            }
+        }
+
+        if(attackID == 6 || attackID == 3)
+        {
+            dodgeLimitBuffer += Time.deltaTime;
+            if (dodgeLimitBuffer > 0.75f)
+                CheckGround();
         }
 
         //Development Inputs
@@ -319,6 +355,8 @@ public class Hornet : MonoBehaviour
 
     private void NextMove(int nextMove)
     {
+        rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
+
         switch (nextMove)
         {
             case 0:
@@ -333,6 +371,7 @@ public class Hornet : MonoBehaviour
                 animNormals.SetBool("ThrowNeedle", true);
                 bufferTime = throwNeedleWaitTime;
                 attackID = 2;
+                rb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
                 break;
             case 2:
                 spinStage = 0;
@@ -385,6 +424,19 @@ public class Hornet : MonoBehaviour
         }
     }
 
+    private void CheckGround()
+    {
+        if (Physics.Raycast(groundCheck.position, -Vector3.up, 0.1f, groundLayers))
+        {
+            anim.SetBool("InAir", false);
+            anim.SetBool("JumpAttack", false);
+            animNormals.SetBool("InAir", false);
+            animNormals.SetBool("JumpAttack", false);
+            dodgeLimitBuffer = 0f;
+            attackID = 0;
+        }
+    }
+
     private void DashAttack()
     {
         if (bufferTime > 0f)
@@ -427,6 +479,27 @@ public class Hornet : MonoBehaviour
         Rotate(true);
         jumpSound.Play();
         Vector3 jumpDir = transform.up + (transform.forward / 8);
+        rb.AddForce(fakeJumpForce * jumpDir, ForceMode.Impulse);
+    }
+
+    IEnumerator Dodge()
+    {
+        anim.SetTrigger("JumpAttackTrigger");
+        anim.SetBool("InAir", true);
+        anim.SetBool("JumpAttack", true);
+        animNormals.SetTrigger("JumpAttackTrigger");
+        animNormals.SetBool("InAir", true);
+        animNormals.SetBool("JumpAttack", true);
+
+        yield return new WaitForSeconds(0.2f);
+
+        Rotate(true);
+        int rand = Random.Range(0, 3);
+        if (rand == 0)
+            dodgeSound1.Play();
+        else
+            dodgeSound0.Play();
+        Vector3 jumpDir = (transform.up / 4) + -transform.forward;
         rb.AddForce(fakeJumpForce * jumpDir, ForceMode.Impulse);
     }
 
@@ -564,7 +637,9 @@ public class Hornet : MonoBehaviour
             anim.SetTrigger("JumpAttackTrigger");
             anim.SetBool("SpinAttack", true);
             anim.SetBool("JumpAttack", true);
+            anim.SetBool("InAir", true);
             animNormals.SetTrigger("JumpAttackTrigger");
+            animNormals.SetBool("InAir", true);
             animNormals.SetBool("SpinAttack", true);
             animNormals.SetBool("JumpAttack", true);
 
@@ -752,6 +827,7 @@ public class Hornet : MonoBehaviour
         {
             anim.SetBool("Walking", false);
             animNormals.SetBool("Walking", false);
+            walk.Stop();
             prevWalk = nextWalk;
             attackID = 0;
         }
@@ -794,6 +870,17 @@ public class Hornet : MonoBehaviour
         }  
     }
 
+    public void DodgeTrigger()
+    {
+        if(attackID == 0 && attackBufferTime > 0f && !dodging && dodgeBuffer < 0)
+        {
+            dodgeBuffer = 2f;
+            dodging = true;
+            rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
+            StartCoroutine(nameof(Dodge));
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (!other.gameObject.CompareTag("Untagged") && other.gameObject.CompareTag("Needle"))
@@ -824,16 +911,19 @@ public class Hornet : MonoBehaviour
             once = false;
             attackID = 0;
         }
-        else if(attackID == 6 || attackID == 3)
+        else if(dodging)
         {
-            if(collision.gameObject.CompareTag("Ground"))
+            if (collision.gameObject.CompareTag("Ground"))
             {
                 anim.SetBool("InAir", false);
                 anim.SetBool("JumpAttack", false);
                 animNormals.SetBool("InAir", false);
                 animNormals.SetBool("JumpAttack", false);
-                attackID = 0;
-            }    
+                rb.velocity = new(0, 0, 0);
+                attackBufferTime = 0.5f;
+                dodgeLimitBuffer = 0;
+                dodging = false;
+            }
         }
     }
 

@@ -24,9 +24,6 @@ public class HornetStats : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.O))
-            DecreaseHealth();
-
         if (Input.GetKeyDown(KeyCode.Keypad6))
         {
             if (!showCount)
@@ -42,7 +39,7 @@ public class HornetStats : MonoBehaviour
         }
     }
 
-    public void DecreaseHealth()
+    public void DecreaseHealth(bool spell)
     {
         currHits++;
         
@@ -51,6 +48,9 @@ public class HornetStats : MonoBehaviour
             hornet.rest = true;
             currHits = 0;
         }
+        else
+            if(!spell)
+                hornet.DodgeTrigger();
 
         if (playerHealth != null)
             playerHealth.text = "" + currHits;
