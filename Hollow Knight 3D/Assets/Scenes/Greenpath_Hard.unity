@@ -13796,8 +13796,8 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 6.74, y: 3.91, z: 0.51}
-  m_Center: {x: -2.08, y: 2.01, z: 6.33}
+  m_Size: {x: 6.74, y: 3.91, z: 1.66}
+  m_Center: {x: -2.08, y: 2.01, z: 6.18}
 --- !u!4 &524827660
 Transform:
   m_ObjectHideFlags: 0
@@ -19447,7 +19447,7 @@ MonoBehaviour:
   startSound: {fileID: 67222525}
   dodgeSound0: {fileID: 67222527}
   dodgeSound1: {fileID: 67222526}
-  attackWaitTime: 0.5
+  attackWaitTime: 0.6
   walkSpeed: 16
   fakeJumpForce: 12
   retrievePostions:
@@ -19474,7 +19474,7 @@ MonoBehaviour:
   groundLayers:
     serializedVersion: 2
     m_Bits: 64
-  restTime: 1
+  restTime: 1.5
   maxRestCount: 4
   showColliders: 0
   manualControl: 0

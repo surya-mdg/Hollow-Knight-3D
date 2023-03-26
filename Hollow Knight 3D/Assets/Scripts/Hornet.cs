@@ -90,7 +90,7 @@ public class Hornet : MonoBehaviour
     private float attackID = 0;
     private int prevMove = 6;
     private int[] attackCount = new int[7];
-    private readonly int[] attackWeights = new int[] {0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 5};
+    private readonly int[] attackWeights = new int[] {0, 0, 0, 1, 1, 2, 2, 3, 3, 3, 4, 5};
     private GameObject particles;
 
     private float bufferTime = 0f;
@@ -152,6 +152,9 @@ public class Hornet : MonoBehaviour
             if(startOnce)
             {
                 startSound.Play();
+                anim.SetBool("Start", true);
+                animNormals.SetBool("Start", true);
+                StartCoroutine(nameof(ResetStart));
                 startOnce = false;
             }
 
@@ -404,17 +407,18 @@ public class Hornet : MonoBehaviour
                 break;
             case 6:
                 restCount++;
-                if(restCount < maxRestCount)
+                restTimeBuffer = restTime;
+                if (restCount < maxRestCount)
                 {
                     restHit.Play();
                     restNeedleHit.Play();
                 }
                 else
                 {
+                    restTimeBuffer = 3f;
                     gm.StopMusic();
                     restFinalBlast.Play();
                 }
-                restTimeBuffer = restTime;
                 rest = false;
                 restOnce = true;
                 attackID = 7;
@@ -424,7 +428,7 @@ public class Hornet : MonoBehaviour
         }
     }
 
-    private void CheckGround()
+    private void CheckGround() //Checks if it is touching the base ground
     {
         if (Physics.Raycast(groundCheck.position, -Vector3.up, 0.1f, groundLayers))
         {
@@ -619,7 +623,7 @@ public class Hornet : MonoBehaviour
         else if(restStage == 1)
         {
             Vector3 dir = (exitPoint.position - transform.position).normalized;
-            transform.Translate(2 * walkSpeed * Time.deltaTime * dir, Space.World);
+            transform.Translate(3 * walkSpeed * Time.deltaTime * dir, Space.World);
             lr.SetPosition(0, holdingNeedle.transform.position);
 
             if (Vector3.Distance(transform.position, exitPoint.position) < 1f)
@@ -695,13 +699,6 @@ public class Hornet : MonoBehaviour
             {
                 stats.DecreaseHealth();
             }
-            //Collider[] colliders = Physics.OverlapSphere(transform.position, spinRadius, playerLayer);
-            /*if (colliders.Length > 0)
-            {
-                if(colliders[0].gameObject != null && colliders[0].CompareTag("Player"))
-                    colliders[0].gameObject.GetComponent<PlayerStats>().DecreaseHealth();
-                Debug.Log("Hit");
-            }*/
         }
         else
         {
@@ -870,7 +867,7 @@ public class Hornet : MonoBehaviour
         }  
     }
 
-    public void DodgeTrigger()
+    public void DodgeTrigger() //Starts the dodge move
     {
         if(attackID == 0 && attackBufferTime > 0f && !dodging && dodgeBuffer < 0)
         {
@@ -879,6 +876,14 @@ public class Hornet : MonoBehaviour
             rb.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
             StartCoroutine(nameof(Dodge));
         }
+    }
+
+    IEnumerator ResetStart() //Reset animation after starting sequence
+    {
+        yield return new WaitForSeconds(0.6f);
+
+        anim.SetBool("Start", false);
+        animNormals.SetBool("Start", false);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -905,7 +910,7 @@ public class Hornet : MonoBehaviour
             anim.SetBool("SpinAttack", false);
             animNormals.SetBool("JumpAttack", false);
             animNormals.SetBool("SpinAttack", false);
-            //dustParticle.Play();
+
             Destroy(particles);
             rb.velocity = new Vector3(0, 0, 0);
             once = false;

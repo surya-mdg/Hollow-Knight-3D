@@ -44,7 +44,9 @@ public class PlayerCombat : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Mouse0) && attackBuffer < 0 && !stats.reviving && !gm.paused)
             Attack();
 
-        if (cam.transform.localRotation.eulerAngles.x < minDownAttackAngle)
+        float angle = cam.transform.localRotation.eulerAngles.x;
+
+        if (angle < minDownAttackAngle || angle > 200f)
             attackLength = attackLengthForward;
         else
         {

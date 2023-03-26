@@ -69,7 +69,7 @@ public class GameManager : MonoBehaviour
         entryGateOpenPos = new(entryGate.position.x, 9.6f, entryGate.position.z);
         entryGateClosePos = new(entryGate.position.x, 6.3f, entryGate.position.z);
 
-        exitGateOpenPos = new(exitGate.position.x, 4.1f, exitGate.position.z);
+        exitGateOpenPos = new(exitGate.position.x, 4.5f, exitGate.position.z);
         exitGateClosePos = new(exitGate.position.x, -0.04f, exitGate.position.z);
 
         startImage.gameObject.SetActive(true);
@@ -84,7 +84,8 @@ public class GameManager : MonoBehaviour
     {
         if(running && !once1)
         {
-            timer += Time.deltaTime;
+            if(!paused)
+                timer += Time.deltaTime;
 
             ControlGates(true);
         }
