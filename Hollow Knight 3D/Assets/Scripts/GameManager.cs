@@ -11,6 +11,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] Transform entryGate;
     [SerializeField] Transform exitGate;
     [SerializeField] Hornet hornet;
+    [SerializeField] Transform corpse;
+    [SerializeField] Transform corpseRot;
 
     [Header("UI")]
     [SerializeField] GameObject pauseScreen;
@@ -52,6 +54,7 @@ public class GameManager : MonoBehaviour
     private bool once4 = false;
     private bool once5 = true;
     private bool once6 = true;
+    private bool corpseFall = false;
     [HideInInspector] public bool paused = false;
     private bool gameOver = false;
     private bool settingsOpen = false;
@@ -102,6 +105,7 @@ public class GameManager : MonoBehaviour
         {
             if (once4)
             {
+                corpseFall = true;
                 gatesOpen.Play();
                 once4 = false;
             }
@@ -112,7 +116,7 @@ public class GameManager : MonoBehaviour
         if (once3)
             StartTransition();
 
-        if(Input.GetKeyDown(KeyCode.Escape))
+        if(Input.GetKeyDown(KeyCode.Escape) && once5)
         {
             if(!paused)
             {
@@ -153,6 +157,11 @@ public class GameManager : MonoBehaviour
             uiClick.Play();
             controlsScreen.SetActive(false);
             once6 = false;
+        }
+
+        if(corpseFall)
+        {
+            corpse.rotation = Quaternion.Lerp(corpse.rotation, corpseRot.rotation, 0.25f);
         }
     }
 
