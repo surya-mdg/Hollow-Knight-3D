@@ -24,6 +24,7 @@ public class Hornet : MonoBehaviour
     [SerializeField] private LineRenderer lr;
     [SerializeField] private GameManager gm;
     [SerializeField] private Transform groundCheck;
+    [SerializeField] private Transform wallCheck;
 
     [Header("Audio")]
     [SerializeField] private AudioSource dash;
@@ -457,9 +458,9 @@ public class Hornet : MonoBehaviour
                 once = true;
             }
 
-            transform.Translate(dashSpeed * Time.deltaTime * Vector3.forward);
-
-            if (Vector3.Distance(initialPos, transform.position) > maxDistance || Physics.CheckSphere(needleSpawn.position, 0.3f, groundLayers))
+            if (Vector3.Distance(initialPos, transform.position) < maxDistance && !Physics.CheckSphere(wallCheck.position, 1f, groundLayers))
+                transform.Translate(dashSpeed * Time.deltaTime * Vector3.forward);
+            else
                 isDashing = false;
         }
         else
